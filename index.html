@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Goal Keeper — 목표를 잃지 않는 앱</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --surface:#ffffff; --surface-2:#fafbfc;
+    --line:#e6e8ec; --text:#1b1f27; --muted:#6b7280; --faint:#9aa1ac;
+    --accent:#4f46e5; --accent-soft:#eef0fe;
+    --ok:#16a34a; --ok-soft:#e8f6ee;
+    --warn:#d97706; --warn-soft:#fdf3e3;
+    --danger:#dc2626; --danger-soft:#fdeaea;
+    --radius:14px; --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115; --surface:#171a21; --surface-2:#1d2129;
+      --line:#2a2f3a; --text:#e8eaed; --muted:#9aa1ac; --faint:#6b7280;
+      --accent:#8b8cf9; --accent-soft:#232746;
+      --ok:#4ade80; --ok-soft:#16301f;
+      --warn:#fbbf24; --warn-soft:#33280f;
+      --danger:#f87171; --danger-soft:#3a1d1d;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:20px 16px 44px}
+
+  /* footer */
+  .site-footer{margin-top:34px; border-top:1px solid var(--line); background:var(--surface)}
+  .footer-inner{max-width:760px; margin:0 auto; padding:18px 16px 26px}
+  .footer-top{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap}
+  .footer-brand{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13.5px}
+  .footer-brand strong{font-size:14.5px; font-weight:800; letter-spacing:-.2px}
+  .footer-brand .sep{color:var(--faint); font-weight:300}
+  .footer-brand .tagline{font-weight:600}
+  .footer-brand .sub{color:var(--faint); font-size:12.5px}
+  .footer-links{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .devbadge{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 12px; font-size:12.5px; color:var(--muted)}
+  .devbadge b{color:var(--text)}
+  .ghbtn{display:inline-flex; align-items:center; gap:6px; background:var(--text); color:var(--surface); border-radius:999px; padding:7px 14px; font-size:12.5px; font-weight:700; text-decoration:none}
+  .ghbtn svg{width:15px; height:15px; fill:currentColor}
+  .ghbtn .arr{opacity:.7}
+  .footer-bottom{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:12px; color:var(--faint); line-height:1.6}
+  .footer-bottom a{color:var(--muted); text-decoration:underline}
+  button{font-family:inherit; cursor:pointer}
+  input,textarea,select{font-family:inherit; font-size:15px; color:var(--text)}
+
+  /* header */
+  header.top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
+  .brand{display:flex; align-items:center; gap:10px}
+  .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#22c1c3);display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px}
+  .brand h1{font-size:17px; margin:0; letter-spacing:-.2px}
+  .brand .sub{font-size:12px; color:var(--faint)}
+  .today-date{font-size:12.5px; color:var(--muted); text-align:right; white-space:nowrap}
+
+  /* tabs */
+  nav.tabs{display:flex; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:5px; margin-bottom:18px; box-shadow:var(--shadow)}
+  nav.tabs button{flex:1; border:0; background:transparent; color:var(--muted); padding:9px 6px; border-radius:8px; font-size:14px; font-weight:600; transition:.15s}
+  nav.tabs button.active{background:var(--accent-soft); color:var(--accent)}
+
+  /* cards */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .stat-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 12px; box-shadow:var(--shadow)}
+  .stat .num{font-size:22px; font-weight:800; letter-spacing:-.5px}
+  .stat .lbl{font-size:12px; color:var(--muted); margin-top:2px}
+  .stat.hot .num{color:var(--accent)}
+
+  /* goal card */
+  .goal{padding:16px; margin-bottom:12px}
+  .goal-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  .goal-title{font-size:16px; font-weight:700; letter-spacing:-.2px; margin:0}
+  .goal-why{font-size:13px; color:var(--muted); margin-top:4px; white-space:pre-wrap}
+  .chip{display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent); white-space:nowrap}
+  .chip.warn{background:var(--warn-soft); color:var(--warn)}
+  .chip.ok{background:var(--ok-soft); color:var(--ok)}
+  .chip.gray{background:var(--surface-2); color:var(--muted); border:1px solid var(--line)}
+
+  .next{margin-top:14px; background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:12px 14px}
+  .next .k{font-size:11px; font-weight:800; letter-spacing:.4px; color:var(--accent); text-transform:uppercase}
+  .next .v{font-size:15px; font-weight:600; margin-top:4px; word-break:break-word}
+  .next.empty{border-left-color:var(--faint)}
+  .next.empty .k{color:var(--faint)}
+
+  .progress{margin-top:12px}
+  .bar{height:6px; border-radius:999px; background:var(--line); overflow:hidden}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),#22c1c3); border-radius:999px; transition:width .3s}
+  .bar-meta{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px}
+
+  .row{display:flex; gap:8px; align-items:center; margin-top:14px; flex-wrap:wrap}
+  .btn{border:0; border-radius:10px; padding:10px 14px; font-weight:700; font-size:14px; transition:.15s}
+  .btn.primary{background:var(--accent); color:#fff}
+  .btn.primary:disabled{opacity:.5; cursor:default}
+  .btn.ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--line)}
+  .btn.ok{background:var(--ok); color:#fff}
+  .btn.small{padding:7px 11px; font-size:13px; border-radius:9px}
+  .btn.link{background:transparent; color:var(--muted); padding:6px 4px; font-weight:600; font-size:13px}
+  .btn.danger{background:transparent; color:var(--danger); font-weight:700; font-size:13px; padding:6px 4px}
+  .btn.ok-done{background:var(--ok-soft); color:var(--ok); border:1px solid transparent}
+
+  /* forms */
+  .field{margin-bottom:12px}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%; border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:10px 12px; outline:none; transition:.15s}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent); background:var(--surface)}
+  .field textarea{resize:vertical; min-height:62px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+
+  /* action list */
+  .actions{list-style:none; margin:12px 0 0; padding:0; border-top:1px dashed var(--line)}
+  .actions li{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line)}
+  .actions li:last-child{border-bottom:0}
+  .checkbox{width:20px;height:20px;flex:0 0 20px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;background:transparent;padding:0}
+  .checkbox.on{background:var(--ok); border-color:var(--ok); color:#fff}
+  .actions li span.txt{flex:1; font-size:14px}
+  .actions li.done span.txt{color:var(--faint); text-decoration:line-through}
+  .actions li .date{font-size:11px; color:var(--faint); white-space:nowrap}
+
+  /* heatmap */
+  .heat{display:flex; gap:3px; overflow-x:auto; padding:4px 0 2px}
+  .heat .col{display:flex; flex-direction:column; gap:3px}
+  .heat .cell{width:13px;height:13px;border-radius:3px;background:var(--surface-2); border:1px solid var(--line)}
+  .heat .cell.l1{background:var(--accent-soft); border-color:transparent}
+  .heat .cell.l2{background:color-mix(in srgb, var(--accent) 45%, var(--surface)); border-color:transparent}
+  .heat .cell.l3{background:var(--accent); border-color:transparent}
+  .heat .cell.today{outline:2px solid var(--accent); outline-offset:1px}
+  .heat-legend{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--faint); margin-top:10px; justify-content:flex-end}
+  .heat-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .muted{color:var(--muted)}
+  .empty-state{text-align:center; padding:44px 20px; color:var(--muted)}
+  .empty-state .big{font-size:34px; margin-bottom:8px}
+  .section-title{font-size:13px; font-weight:800; letter-spacing:.3px; text-transform:uppercase; color:var(--faint); margin:22px 0 10px}
+  .stack{display:flex; flex-direction:column; gap:0}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:var(--text); color:var(--bg); padding:11px 18px; border-radius:999px; font-size:13.5px; font-weight:600; opacity:0; transition:.25s; pointer-events:none; z-index:50; box-shadow:var(--shadow)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  /* onboarding wizard */
+  .overlay{position:fixed; inset:0; background:color-mix(in srgb, var(--text) 45%, transparent); z-index:100; display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow:auto; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px)}
+  .overlay[hidden]{display:none}
+  .sheet{background:var(--bg); width:100%; max-width:620px; border-radius:18px; box-shadow:var(--shadow); padding:22px; margin:auto}
+  .sheet h2{font-size:18px; margin:0 0 4px; letter-spacing:-.3px}
+  .sheet .lead{font-size:13px; color:var(--muted); margin:0 0 16px}
+  .steps{display:flex; gap:6px; margin-bottom:18px}
+  .steps i{height:5px; flex:1; border-radius:999px; background:var(--line)}
+  .steps i.on{background:var(--accent)}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip-sel{border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--muted); transition:.15s}
+  .chip-sel.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+  .bmi{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px}
+  .bmi .val{font-size:26px; font-weight:800; letter-spacing:-.5px}
+  .bmi .cat{font-size:13px; font-weight:700}
+  .bmi-rows{margin-top:10px; font-size:12.5px; color:var(--muted); display:flex; flex-direction:column; gap:3px}
+  .rec{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px}
+  .rec.off{opacity:.45}
+  .rec-head{display:flex; gap:10px; align-items:flex-start}
+  .rec-head input[type=checkbox]{width:19px; height:19px; margin-top:2px; accent-color:var(--accent)}
+  .rec .actions li .txt{font-size:13px}
+  .note{font-size:12px; color:var(--warn); background:var(--warn-soft); border-radius:10px; padding:10px 12px; margin-top:10px; line-height:1.5}
+  .privacy{font-size:12px; color:var(--faint); background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; line-height:1.5}
+  .wiz-nav{display:flex; justify-content:space-between; gap:10px; margin-top:20px; align-items:center}
+  .danger-zone{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:14px; flex-wrap:wrap}
+  .hint{font-size:12px; color:var(--faint); margin-top:6px; line-height:1.45}
+  @media (max-width:520px){ .stat-row{gap:8px} .stat{padding:12px 10px} .stat .num{font-size:19px} .grid2{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">G</div>
+      <div>
+        <h1>Goal Keeper</h1>
+        <div class="sub">목표를 잃지 않고, 매일 한 걸음</div>
+      </div>
+    </div>
+    <div class="today-date" id="todayDate"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="today" class="active">오늘</button>
+    <button data-tab="goals">목표</button>
+    <button data-tab="history">기록</button>
+  </nav>
+
+  <section id="view-today"></section>
+  <section id="view-goals" hidden></section>
+  <section id="view-history" hidden></section>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <strong>Goal Keeper</strong>
+        <span class="sep">|</span>
+        <span class="tagline">목표를 잃지 않고 매일 한 걸음</span>
+        <span class="dot muted">·</span>
+        <span class="sub">Designed for steady execution</span>
+      </div>
+      <div class="footer-links">
+        <span class="devbadge">❤ Developed by <b>azdream</b></span>
+        <a class="ghbtn" href="https://github.com/azdream" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub <span class="arr">↗</span>
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Goal Keeper. All rights reserved. 본 도구는 개인 목표 관리를 위해 제작되었습니다.</span>
+      <span>피드백 및 문의: <a href="https://github.com/azdream" target="_blank" rel="noopener noreferrer">GitHub(@azdream)</a>을 통해 언제든 전달해 주세요.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="overlay" id="onboard" hidden><div class="sheet" id="wizSheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var LS_KEY = "goalKeeper.v1";
+
+  /* ---------- date helpers (local time) ---------- */
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function dateKey(d){ d = d || new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function parseKey(k){ var p = k.split("-").map(Number); return new Date(p[0], p[1]-1, p[2]); }
+  function addDays(k, n){ var d = parseKey(k); d.setDate(d.getDate()+n); return dateKey(d); }
+  function diffDays(a, b){ return Math.round((parseKey(b) - parseKey(a)) / 86400000); }
+  function prettyDate(k){
+    var d = parseKey(k), w = ["일","월","화","수","목","금","토"][d.getDay()];
+    return (d.getMonth()+1)+"월 "+d.getDate()+"일 ("+w+")";
+  }
+
+  /* ---------- state ---------- */
+  var state = load();
+  function load(){
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if(raw){ var s = JSON.parse(raw); if(s && s.goals) return s; }
+    }catch(e){}
+    return { goals: [], checkins: {}, onboarded: false, profile: null, gtasks: { clientId:"", lastSync:null } };
+  }
+  function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ toast("저장 실패: 저장 공간을 확인하세요"); } }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function getGoal(id){ return state.goals.filter(function(g){ return g.id===id; })[0]; }
+  function nextAction(g){ return g.actions.filter(function(a){ return !a.done; })[0] || null; }
+  function doneCount(g){ return g.actions.filter(function(a){ return a.done; }).length; }
+  function lastCheck(g){
+    var dates = g.actions.filter(function(a){ return a.done && a.doneAt; }).map(function(a){ return a.doneAt; });
+    return dates.sort().pop() || null;
+  }
+  function checkedToday(g){ return lastCheck(g) === dateKey(); }
+
+  function computeStreak(){
+    var days = {};
+    Object.keys(state.checkins).forEach(function(k){ if(state.checkins[k] && state.checkins[k].count>0) days[k]=true; });
+    var today = dateKey();
+    var cursor = days[today] ? today : addDays(today,-1);
+    if(!days[cursor]) return 0;
+    var n = 0;
+    while(days[cursor]){ n++; cursor = addDays(cursor,-1); }
+    return n;
+  }
+  function longestStreak(){
+    var keys = Object.keys(state.checkins).filter(function(k){ return state.checkins[k] && state.checkins[k].count>0; }).sort();
+    var best = 0, run = 0, prev = null;
+    keys.forEach(function(k){
+      run = (prev && diffDays(prev,k)===1) ? run+1 : 1;
+      if(run > best) best = run;
+      prev = k;
+    });
+    return best;
+  }
+  function totalCheckins(){
+    return Object.keys(state.checkins).reduce(function(s,k){ return s + (state.checkins[k].count||0); }, 0);
+  }
+
+  function recordCheckin(goalId){
+    var k = dateKey();
+    if(!state.checkins[k]) state.checkins[k] = { count:0, goals:[] };
+    state.checkins[k].count++;
+    if(state.checkins[k].goals.indexOf(goalId) === -1) state.checkins[k].goals.push(goalId);
+  }
+  function removeCheckin(goalId){
+    var k = dateKey(), rec = state.checkins[k];
+    if(!rec) return;
+    rec.count = Math.max(0, rec.count - 1);
+    rec.goals = rec.goals.filter(function(x){ return x!==goalId; });
+    if(rec.count<=0) delete state.checkins[k];
+  }
+
+  /* ---------- actions ---------- */
+  function completeNext(goalId){
+    var g = getGoal(goalId); if(!g) return;
+    var a = nextAction(g);
+    if(!a){ toast("다음 행동을 먼저 추가하세요"); go("goals"); return; }
+    a.done = true; a.doneAt = dateKey();
+    g.lastCheckIn = dateKey();
+    recordCheckin(goalId);
+    save(); render();
+    toast("체크인 완료 · 연속 " + computeStreak() + "일");
+  }
+  function undoToday(goalId){
+    var g = getGoal(goalId); if(!g) return;
+    var k = dateKey();
+    var doneToday = g.actions.filter(function(a){ return a.done && a.doneAt===k; });
+    if(!doneToday.length){ toast("오늘 되돌릴 체크인이 없습니다"); return; }
+    doneToday.sort(function(a,b){ return (b.doneOrder||0)-(a.doneOrder||0); });
+    var a = doneToday[0];
+    a.done = false; a.doneAt = null;
+    removeCheckin(goalId);
+    g.lastCheckIn = lastCheck(g);
+    save(); render(); toast("오늘 체크인을 되돌렸습니다");
+  }
+  function addGoal(data){
+    state.goals.push({
+      id: uid(),
+      title: data.title,
+      why: data.why || "",
+      category: data.category || "기타",
+      targetDate: data.targetDate || null,
+      createdAt: new Date().toISOString(),
+      lastCheckIn: null,
+      actions: data.firstAction ? [{ id: uid(), text: data.firstAction, done:false, doneAt:null }] : []
+    });
+    save(); render();
+  }
+  function deleteGoal(id){
+    var g = getGoal(id); if(!g) return;
+    if(!confirm("'" + g.title + "' 목표와 기록을 삭제할까요? 되돌릴 수 없습니다.")) return;
+    state.goals = state.goals.filter(function(x){ return x.id!==id; });
+    save(); render(); toast("목표를 삭제했습니다");
+  }
+  function addAction(goalId, text, afterId){
+    var g = getGoal(goalId); if(!g || !text) return;
+    var item = { id: uid(), text: text, done:false, doneAt:null };
+    if(afterId){
+      var i = g.actions.findIndex(function(a){ return a.id===afterId; });
+      g.actions.splice(i+1, 0, item);
+    } else {
+      g.actions.push(item);
+    }
+    save(); render();
+  }
+  function toggleAction(goalId, actionId){
+    var g = getGoal(goalId); if(!g) return;
+    var a = g.actions.filter(function(x){ return x.id===actionId; })[0]; if(!a) return;
+    a.done = !a.done; a.doneAt = a.done ? dateKey() : null;
+    if(a.done){ g.lastCheckIn = dateKey(); recordCheckin(goalId); }
+    else { removeCheckin(goalId); g.lastCheckIn = lastCheck(g); }
+    save(); render();
+  }
+  function removeAction(goalId, actionId){
+    var g = getGoal(goalId); if(!g) return;
+    var a = g.actions.filter(function(x){ return x.id===actionId; })[0]; if(!a) return;
+    if(a.done) removeCheckin(goalId);
+    g.actions = g.actions.filter(function(x){ return x.id!==actionId; });
+    g.lastCheckIn = lastCheck(g);
+    save(); render();
+  }
+  function editGoal(id){
+    var g = getGoal(id); if(!g) return;
+    var title = prompt("목표 제목", g.title); if(title===null) return;
+    var why = prompt("왜 이 목표인가요? (동기)", g.why); if(why===null) return;
+    var target = prompt("목표 기한 (YYYY-MM-DD, 없으면 비움)", g.targetDate || "");
+    g.title = title.trim() || g.title;
+    g.why = why.trim();
+    g.targetDate = (target && /^\d{4}-\d{2}-\d{2}$/.test(target.trim())) ? target.trim() : null;
+    save(); render();
+  }
+
+  /* ---------- render ---------- */
+  var esc = function(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]; }); };
+  var currentTab = "today";
+
+  function render(){ renderToday(); renderGoals(); renderHistory(); }
+  function go(tab){
+    currentTab = tab;
+    document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.toggle("active", b.dataset.tab===tab); });
+    document.getElementById("view-today").hidden = tab!=="today";
+    document.getElementById("view-goals").hidden = tab!=="goals";
+    document.getElementById("view-history").hidden = tab!=="history";
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+
+  function staleChip(g){
+    var lc = lastCheck(g);
+    if(!lc) return '<span class="chip gray">시작 전</span>';
+    var d = diffDays(lc, dateKey());
+    if(d<=0) return '<span class="chip ok">오늘 체크인 ✓</span>';
+    if(d>=3) return '<span class="chip warn">'+d+'일째 멈춤</span>';
+    return '<span class="chip gray">'+d+'일 전</span>';
+  }
+
+  function renderToday(){
+    var streak = computeStreak();
+    var todayDone = state.goals.filter(checkedToday).length;
+    var el = document.getElementById("view-today");
+
+    if(!state.goals.length){
+      el.innerHTML = '<div class="card empty-state"><div class="big">🎯</div>'+
+        '<div style="font-weight:700; color:var(--text)">아직 목표가 없습니다</div>'+
+        '<div class="hint" style="max-width:360px;margin:8px auto 18px">1분 설문으로 <b>목표와 다음 행동을 대신 잡아드립니다</b>. 마음에 안 드는 건 언제든 고칠 수 있어요.</div>'+
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'+
+          '<button class="btn primary" id="emptyRec">1분 만에 추천 받기</button>'+
+          '<button class="btn ghost" id="emptyAdd">직접 만들기</button>'+
+        '</div></div>';
+      document.getElementById("emptyRec").addEventListener("click", function(){ openWizard(); });
+      document.getElementById("emptyAdd").addEventListener("click", function(){ go("goals"); });
+      return;
+    }
+
+    var cards = state.goals.slice().sort(function(a,b){
+      var la = lastCheck(a)||"0", lb = lastCheck(b)||"0";
+      return la < lb ? -1 : la > lb ? 1 : 0;
+    }).map(function(g){
+      var a = nextAction(g);
+      var total = g.actions.length, dc = doneCount(g);
+      var pct = total ? Math.round(dc/total*100) : 0;
+      var isToday = checkedToday(g);
+      var lc = lastCheck(g);
+      var staleWarn = !isToday && lc && diffDays(lc, dateKey())>=3;
+      var nextHtml = a
+        ? '<div class="next"><div class="k">다음 행동</div><div class="v">'+esc(a.text)+'</div></div>'
+        : '<div class="next empty"><div class="k">다음 행동</div><div class="v muted">없음 — 목표 탭에서 다음 행동을 추가하세요</div></div>';
+      var btn = isToday
+        ? '<button class="btn ok-done small" data-undo="'+g.id+'">오늘 완료 ✓ · 되돌리기</button>'
+        : (a ? '<button class="btn primary" data-check="'+g.id+'">오늘 체크인</button>'
+             : '<button class="btn ghost" data-goto="'+g.id+'">다음 행동 추가</button>');
+      return '<div class="card goal">'+
+        '<div class="goal-head"><div style="min-width:0">'+
+          '<h3 class="goal-title">'+esc(g.title)+'</h3>'+
+          (g.why ? '<div class="goal-why">'+esc(g.why)+'</div>' : '')+
+        '</div><div style="text-align:right">'+ staleChip(g) +'</div></div>'+
+        nextHtml+
+        '<div class="progress"><div class="bar"><i style="width:'+pct+'%"></i></div>'+
+        '<div class="bar-meta"><span>'+dc+' / '+total+' 행동 완료</span><span>'+(g.targetDate ? '기한 '+g.targetDate : '기한 없음')+'</span></div></div>'+
+        '<div class="row">'+btn+'</div>'+
+        (staleWarn ? '<div class="hint" style="color:var(--warn)">'+ diffDays(lc,dateKey()) +'일째 이 목표에 손대지 않았어요. 지금 5분만 써볼까요?</div>' : '')+
+      '</div>';
+    }).join("");
+
+    el.innerHTML =
+      '<div class="stat-row">'+
+        '<div class="stat hot"><div class="num">'+streak+'일</div><div class="lbl">연속 체크인</div></div>'+
+        '<div class="stat"><div class="num">'+todayDone+' / '+state.goals.length+'</div><div class="lbl">오늘 체크한 목표</div></div>'+
+        '<div class="stat"><div class="num">'+totalCheckins()+'</div><div class="lbl">누적 체크인</div></div>'+
+      '</div>'+
+      '<div class="section-title">오늘의 집중</div>'+ cards;
+
+    el.querySelectorAll("[data-check]").forEach(function(b){ b.addEventListener("click", function(){ completeNext(b.dataset.check); }); });
+    el.querySelectorAll("[data-undo]").forEach(function(b){ b.addEventListener("click", function(){ undoToday(b.dataset.undo); }); });
+    el.querySelectorAll("[data-goto]").forEach(function(b){ b.addEventListener("click", function(){ go("goals"); }); });
+  }
+
+  function renderGoals(){
+    var el = document.getElementById("view-goals");
+    var list = state.goals.map(function(g){
+      var items = g.actions.map(function(a){
+        return '<li class="'+(a.done?"done":"")+'">'+
+          '<button class="checkbox '+(a.done?"on":"")+'" data-tg="'+g.id+'|'+a.id+'" aria-label="완료 토글">'+(a.done?"✓":"")+'</button>'+
+          '<span class="txt">'+esc(a.text)+'</span>'+
+          (a.doneAt ? '<span class="date">'+a.doneAt.slice(5)+'</span>' : '')+
+          '<button class="btn link" data-del-a="'+g.id+'|'+a.id+'">삭제</button>'+
+        '</li>';
+      }).join("");
+      return '<div class="card goal">'+
+        '<div class="goal-head"><div style="min-width:0">'+
+          '<h3 class="goal-title">'+esc(g.title)+'</h3>'+
+          (g.why ? '<div class="goal-why">'+esc(g.why)+'</div>' : '')+
+        '</div><div style="text-align:right"><span class="chip">'+esc(g.category)+'</span></div></div>'+
+        (items ? '<ul class="actions">'+items+'</ul>' : '<div class="hint">행동이 아직 없습니다. 아래에 다음 행동을 추가하세요.</div>')+
+        '<div class="row">'+
+          '<input class="act-input" data-goal="'+g.id+'" placeholder="다음 행동 (30~90분 단위)" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px 12px">'+
+          '<button class="btn ghost small" data-add-a="'+g.id+'">+ 행동 추가</button>'+
+        '</div>'+
+        '<div class="row" style="margin-top:8px">'+
+          '<button class="btn link" data-edit="'+g.id+'">목표 수정</button>'+
+          '<button class="btn danger" data-del-g="'+g.id+'">목표 삭제</button>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+
+    el.innerHTML =
+      '<div class="card goal">'+
+        '<div class="section-title" style="margin-top:0">새 목표</div>'+
+        '<div class="field"><label>목표</label><input id="ng-title" placeholder="예: 매일 30분 운동하기"></div>'+
+        '<div class="field"><label>왜 이 목표인가요? (동기를 적어두면 흔들릴 때 돌아옵니다)</label><textarea id="ng-why" placeholder="예: 건강하게 오래 활동하고 싶어서"></textarea></div>'+
+        '<div class="grid2">'+
+          '<div class="field"><label>분류</label><select id="ng-cat">'+
+            CATS.map(function(c){ return '<option>'+c+'</option>'; }).join("")+
+          '</select></div>'+
+          '<div class="field"><label>기한 (선택)</label><input id="ng-target" type="date"></div>'+
+        '</div>'+
+        '<div class="field"><label>첫 다음 행동 (선택)</label><input id="ng-action" placeholder="예: 운동복 꺼내두기"></div>'+
+        '<div class="row"><button class="btn primary" id="ng-add">목표 추가</button><button class="btn ghost" id="ng-recommend">말로/골라서 추천 받기</button></div>'+
+      '</div>'+
+      '<div class="section-title">내 목표 ('+state.goals.length+')</div>'+
+      (list || '<div class="card empty-state">목표를 추가해 보세요.</div>');
+
+    document.getElementById("ng-recommend").addEventListener("click", function(){ openWizard(); });
+    document.getElementById("ng-add").addEventListener("click", function(){
+      var title = document.getElementById("ng-title").value.trim();
+      if(!title){ toast("목표 제목을 입력하세요"); return; }
+      addGoal({
+        title: title,
+        why: document.getElementById("ng-why").value.trim(),
+        category: document.getElementById("ng-cat").value,
+        targetDate: document.getElementById("ng-target").value || null,
+        firstAction: document.getElementById("ng-action").value.trim()
+      });
+      toast("목표를 추가했습니다");
+    });
+
+    el.querySelectorAll("[data-tg]").forEach(function(b){ b.addEventListener("click", function(){ var p=b.dataset.tg.split("|"); toggleAction(p[0],p[1]); }); });
+    el.querySelectorAll("[data-del-a]").forEach(function(b){ b.addEventListener("click", function(){ var p=b.dataset.delA.split("|"); removeAction(p[0],p[1]); }); });
+    el.querySelectorAll("[data-del-g]").forEach(function(b){ b.addEventListener("click", function(){ deleteGoal(b.dataset.delG); }); });
+    el.querySelectorAll("[data-edit]").forEach(function(b){ b.addEventListener("click", function(){ editGoal(b.dataset.edit); }); });
+    el.querySelectorAll("[data-add-a]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var gid = b.dataset.addA;
+        var input = el.querySelector('.act-input[data-goal="'+gid+'"]');
+        var t = input.value.trim();
+        if(!t){ toast("행동 내용을 입력하세요"); return; }
+        addAction(gid, t, null);
+        toast("행동을 추가했습니다");
+      });
+    });
+    el.querySelectorAll(".act-input").forEach(function(inp){
+      inp.addEventListener("keydown", function(e){
+        if(e.key==="Enter"){
+          var t = inp.value.trim(); if(!t) return;
+          addAction(inp.dataset.goal, t, null); toast("행동을 추가했습니다");
+        }
+      });
+    });
+  }
+
+  function renderHistory(){
+    var el = document.getElementById("view-history");
+    var today = dateKey();
+    // heatmap: last 12 weeks aligned to week columns
+    var start = addDays(today, -((11*7) + parseKey(today).getDay()));
+    var cols = "";
+    for(var w=0; w<12; w++){
+      var cells = "";
+      for(var d=0; d<7; d++){
+        var k = addDays(start, w*7+d);
+        var rec = state.checkins[k];
+        var c = rec ? rec.count : 0;
+        var lvl = c===0 ? "" : c===1 ? "l1" : c===2 ? "l2" : "l3";
+        var cls = "cell " + lvl + (k===today ? " today" : "");
+        var enabled = diffDays(k, today) >= 0;
+        cells += '<div class="'+cls+'" title="'+k+(c?(" · "+c+"회"):"")+'" style="'+(enabled?"":"opacity:.35")+'"></div>';
+      }
+      cols += '<div class="col">'+cells+'</div>';
+    }
+
+    var recent = Object.keys(state.checkins).sort().reverse().slice(0,14).map(function(k){
+      var rec = state.checkins[k];
+      var names = rec.goals.map(function(gid){ var g=getGoal(gid); return g?g.title:null; }).filter(Boolean);
+      return '<li style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line)">'+
+        '<span>'+prettyDate(k)+'</span>'+
+        '<span class="muted" style="text-align:right">'+rec.count+'회 · '+esc(names.join(", ").slice(0,40))+'</span></li>';
+    }).join("");
+
+    el.innerHTML =
+      '<div class="stat-row">'+
+        '<div class="stat hot"><div class="num">'+computeStreak()+'일</div><div class="lbl">현재 연속</div></div>'+
+        '<div class="stat"><div class="num">'+longestStreak()+'일</div><div class="lbl">최장 연속</div></div>'+
+        '<div class="stat"><div class="num">'+totalCheckins()+'</div><div class="lbl">누적 체크인</div></div>'+
+      '</div>'+
+      '<div class="card goal">'+
+        '<div class="section-title" style="margin-top:0">최근 12주</div>'+
+        '<div class="heat">'+cols+'</div>'+
+        '<div class="heat-legend">적음 <i style="background:var(--surface-2);border:1px solid var(--line)"></i><i style="background:var(--accent-soft)"></i><i style="background:color-mix(in srgb, var(--accent) 45%, var(--surface))"></i><i style="background:var(--accent)"></i> 많음</div>'+
+      '</div>'+
+      '<div class="card goal" style="margin-top:12px">'+
+        '<div class="section-title" style="margin-top:0">최근 체크인</div>'+
+        (recent ? '<ul style="list-style:none;margin:0;padding:0">'+recent+'</ul>' : '<div class="hint">아직 기록이 없습니다.</div>')+
+      '</div>'+
+      '<div class="card goal" style="margin-top:12px">'+
+        '<div class="section-title" style="margin-top:0">데이터</div>'+
+        '<div class="hint">기록은 이 브라우저에만 저장됩니다. 백업하거나 다른 기기로 옮길 때 사용하세요.</div>'+
+        '<div class="danger-zone">'+
+          '<button class="btn ghost small" id="exp">JSON 내보내기</button>'+
+          '<button class="btn ghost small" id="imp">JSON 가져오기</button>'+
+          '<button class="btn danger" id="reset">전체 초기화</button>'+
+        '</div>'+
+        '<input type="file" id="impFile" accept="application/json" hidden>'+
+      '</div>'+
+      gtasksCardHtml();
+
+    document.getElementById("exp").addEventListener("click", function(){
+      var blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+      var url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url; a.download = "goal-keeper-"+dateKey()+".json"; a.click();
+      URL.revokeObjectURL(url); toast("내보냈습니다");
+    });
+    document.getElementById("imp").addEventListener("click", function(){ document.getElementById("impFile").click(); });
+    document.getElementById("impFile").addEventListener("change", function(e){
+      var f = e.target.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        try{
+          var s = JSON.parse(r.result);
+          if(!s || !s.goals) throw 0;
+          if(!confirm("현재 데이터를 가져온 데이터로 바꿉니다. 계속할까요?")) return;
+          state = s; save(); render(); toast("가져왔습니다");
+        }catch(err){ toast("올바른 백업 파일이 아닙니다"); }
+      };
+      r.readAsText(f);
+    });
+    document.getElementById("reset").addEventListener("click", function(){
+      if(!confirm("모든 목표와 기록을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?")) return;
+      state = { goals: [], checkins: {}, onboarded: false, profile: null, gtasks: { clientId:"", lastSync:null } }; save(); render(); toast("초기화했습니다");
+    });
+    bindGtasks();
+  }
+
+  /* ================= onboarding & recommendations ================= */
+
+  var CATS = ["커리어","학습","건강","사업","가족","재정","기타"];
+  var HORIZONS = [
+    { key:"short", label:"단기 · 1개월",  days:30,  hint:"지금 당장" },
+    { key:"mid",   label:"중기 · 6개월",  days:180, hint:"올해 안에" },
+    { key:"long",  label:"장기 · 1년+",   days:365, hint:"멀리 보고" }
+  ];
+  var H_LABEL = {}; HORIZONS.forEach(function(h){ H_LABEL[h.key] = h.label; });
+  function cellKey(cat, h){ return cat + "|" + h; }
+  function splitKey(k){ var p = k.split("|"); return { cat:p[0], h:p[1] }; }
+  function dateForHorizon(h){
+    var d = HORIZONS.filter(function(x){ return x.key===h; })[0];
+    return d && d.days ? addDays(dateKey(), d.days) : null;
+  }
+
+  /* ---- BMI / body ---- */
+  function bmiInfo(p){
+    var kg = parseFloat(p.weight), cm = parseFloat(p.height);
+    if(!kg || !cm || cm < 100 || kg < 20) return null;
+    var m = cm/100, m2 = m*m, b = kg/m2;
+    var cat, bad;
+    if(b < 18.5){ cat = "저체중"; bad = false; }
+    else if(b < 23){ cat = "정상"; bad = false; }
+    else if(b < 25){ cat = "과체중"; bad = true; }
+    else if(b < 30){ cat = "비만 1단계"; bad = true; }
+    else { cat = "비만 2단계"; bad = true; }
+    return { kg:kg, cm:cm, m2:m2, bmi:b, cat:cat, bad:bad,
+             normalMax: 22.9*m2, normalMin: 18.5*m2 };
+  }
+  function addWeeks(k, n){ return addDays(k, n*7); }
+
+  /* body-data-driven health goals, one per horizon */
+  function weightGoal(p, h){
+    var i = bmiInfo(p); if(!i) return null;
+    var older = ["40대","50대","60대+"].indexOf(p.age) !== -1;
+    if(i.bmi >= 25){
+      var first = Math.round(i.kg*0.95*10)/10;
+      var weeks = Math.max(2, Math.ceil((i.kg-first)/0.75));
+      if(h === "short"){
+        var acts = [
+          "한 주에 0.5~0.9kg씩 줄이는 페이스로 식사·체중 기록 시작하기",
+          i.bmi >= 30 ? "관절 부담이 적은 걷기·자전거·수영 30분, 주 4~5회" : "빠르게 걷기 30분, 주 4~5회",
+          "단 음료·야식 줄이고 물·무가당 음료로 바꾸기"
+        ];
+        if(older) acts.push("혈압·혈당·콜레스테롤 검사 수치 확인해두기");
+        return { title:"1차 목표: " + first + "kg까지 감량",
+          why:"현재 BMI " + i.bmi.toFixed(1) + " (" + i.cat + "). 체중의 5%만 줄여도 혈압·혈당·관절 부담이 눈에 띄게 좋아집니다. 지금 속도면 약 " + weeks + "주.",
+          targetDate: addWeeks(dateKey(), weeks), actions: acts };
+      }
+      if(h === "mid"){
+        return { title:"최종 목표: " + i.normalMax.toFixed(1) + "kg (정상 BMI) 부근",
+          why:"BMI 22.9 기준 정상 상한 체중입니다. 단계별로 내려오면 부담이 적습니다. 총 " + (i.kg-i.normalMax).toFixed(1) + "kg 감량이 필요합니다.",
+          targetDate: dateForHorizon("mid"),
+          actions:["주 2회 근력운동으로 근손실 막기","주 1회 같은 시간에 체중 재고 기록하기","정체기가 오면 식단·운동 조정 방법 찾아보기"] };
+      }
+      return { title:"장기 목표: 감량한 체중 유지하기",
+        why:"빠진 체중을 유지하는 것이 진짜 난이도입니다. 1년 이상 지켜지는 습관으로 만들어야 합니다.",
+        targetDate:null,
+        actions:["감량 후 3개월간 주 1회 체중 체크하기","좋아하는 운동 1개를 생활 루틴으로 고정하기","과식한 날은 다음 날로 회복하는 규칙 정하기"] };
+    }
+    if(i.bmi < 18.5){
+      if(h === "short") return { title:"목표: " + i.normalMin.toFixed(1) + "kg까지 건강하게 증량",
+        why:"현재 BMI " + i.bmi.toFixed(1) + " (" + i.cat + "). 단백질과 근력운동으로 근육 위주로 늘리는 게 좋습니다.",
+        targetDate:dateForHorizon("short"), actions:["단백질 간식 하루 1~2회 챙기기","주 3회 근력운동 20분"] };
+      return { title:"목표: 정상 체중 " + i.normalMin.toFixed(1) + "kg 도달 후 유지",
+        why:"증량은 서두르지 말고 근육 위주로 올리는 것이 핵심입니다.",
+        targetDate: h==="mid" ? dateForHorizon("mid") : null,
+        actions:["한 달에 한 번 체중·체성분 기록하기","식사량 천천히 늘리고 근력운동 병행"] };
+    }
+    if(h === "short") return { title:"목표: 현재 체중 " + i.kg + "kg 지키기",
+      why:"BMI " + i.bmi.toFixed(1) + " (" + i.cat + "). 지금의 좋은 습관을 유지하는 것이 목표입니다.",
+      targetDate:null, actions:["주 1회 체중 재고 기록하기","주 3회 30분 운동 이어가기"] };
+    return null; /* mid/long fall back to generic health templates */
+  }
+
+  /* ---- goal templates: 분류 × 기간 ---- */
+  var TPL = {
+    "커리어": {
+      short: [{ title:"이번 달, 커리어 정비 시작",
+        why:"한 달이면 방향은 잡힙니다. 성과를 정리해두면 기회가 왔을 때 바로 움직일 수 있습니다.",
+        actions:["이력서·경력기술서 최신화 초안 30분 쓰기","최근 성과 3개를 숫자로 정리하기"] }],
+      mid: [{ title:"6개월 안에 이직·전직 성사",
+        why:"반년을 잡으면 준비→지원→협상까지 한 사이클을 돌릴 수 있습니다.",
+        actions:["관심 공고 5곳 정하고 지원하기","포트폴리오·기술 정리 문서 완성하기","업계 사람 1~2명과 이야기 나누기"] }],
+      long: [{ title:"1년 안에 원하는 직무·연봉 도달",
+        why:"1년 단위로 보면 지금 없는 역량을 미리 채워둘 수 있습니다.",
+        actions:["1년 로드맵 초안 쓰고 분기 목표로 쪼개기","부족한 역량 1개를 학습 목표로 연결하기"] }]
+    },
+    "학습": {
+      short: [{ title:"이번 달 새 주제 첫걸음",
+        why:"한 달이면 입문은 끝낼 수 있습니다. 시작이 반입니다.",
+        actions:["입문 강의·책 1개 정해 완주하기","배운 것 10분 요약 정리하기"] }],
+      mid: [{ title:"6개월 안에 자격증·실력 목표",
+        why:"6개월은 자격증이나 실전 수준에 도달하기 좋은 길이입니다.",
+        actions:["주 단위 학습 계획 세우기","한 달에 모의고사·실전 1회 보기"] }],
+      long: [{ title:"1년 안에 전문 분야 만들기",
+        why:"1년을 꾸준히 파면 남들이 물어보는 분야가 됩니다.",
+        actions:["심화 프로젝트 1개 완성하기","배운 것을 글이나 발표로 1회 공유하기"] }]
+    },
+    "건강": {
+      short: [{ title:"이번 달 운동 습관 붙이기",
+        why:"체력은 모든 목표의 바닥입니다. 한 달이면 습관이 붙습니다.",
+        actions:["주 3회 30분 운동할 요일 정하기","운동복·신발 현관에 꺼내두기"] }],
+      mid: [{ title:"6개월 체력 목표 달성",
+        why:"반년이면 체력이 눈에 띄게 달라집니다.",
+        actions:["월 1회 체력 기록 측정하기","주 2회 이상 운동 루틴 유지하기"] }],
+      long: [{ title:"평생 갈 운동 루틴 만들기",
+        why:"오래 가는 사람은 의지가 아니라 루틴으로 합니다.",
+        actions:["좋아하는 종목 1개 정해 계속하기","부상 예방 스트레칭 루틴 넣기"] }]
+    },
+    "사업": {
+      short: [{ title:"이번 달 아이디어 검증",
+        why:"만들기 전에 팔리는지부터 확인하면 시간을 아낍니다.",
+        actions:["아이디어 3개 적고 1개 고르기","잠재 고객 5명에게 물어보기"] }],
+      mid: [{ title:"6개월 안에 첫 매출",
+        why:"첫 매출은 완벽보다 시작에서 나옵니다.",
+        actions:["판매 채널 1개 열기","첫 상품·서비스 등록하기"] }],
+      long: [{ title:"1년 안에 수익 구조 만들기",
+        why:"한 번 팔리는 것과 계속 팔리는 것은 다릅니다.",
+        actions:["월 손익 기록 틀 만들기","반복 작업 자동화 1개 붙이기"] }]
+    },
+    "가족": {
+      short: [{ title:"이번 달 가족과의 시간",
+        why:"관계는 시간을 들여야 남습니다.",
+        actions:["이번 주 가족과 할 일 하나 정하기","식사할 때 폰 내려놓기"] }],
+      mid: [{ title:"6개월 가족 프로젝트",
+        why:"함께 하는 목표가 있으면 관계가 쌓입니다.",
+        actions:["가족과 함께 할 목표 하나 정하기","월 1회 가족 나들이 계획하기"] }],
+      long: [{ title:"1년 가족 계획 세우기",
+        why:"멀리 보는 계획이 반복되는 갈등을 줄입니다.",
+        actions:["1년 가족 일정·목표 함께 정리하기","아이와의 시간 정기적으로 확보하기"] }]
+    },
+    "재정": {
+      short: [{ title:"이번 달 지출 점검",
+        why:"돈의 흐름을 알면 불안이 줄고 선택이 쉬워집니다.",
+        actions:["이번 달 고정지출 목록 만들기","안 쓰는 구독 해지하기"] }],
+      mid: [{ title:"6개월 저축 목표",
+        why:"자동으로 빠져나가게 만들면 의지에 기대지 않아도 됩니다.",
+        actions:["월 저축액 정하고 자동이체 걸기","비상금 목표 금액 정하기"] }],
+      long: [{ title:"1년 자산·노후 계획",
+        why:"1년 단위로 점검하면 큰 방향을 잃지 않습니다.",
+        actions:["1년 자산 목표 숫자 정하기","연금·투자 계좌 점검하기"] }]
+    },
+    "기타": {
+      short: [{ title:"이번 달 미루던 일 정리",
+        why:"작은 완료가 쌓여야 자신감이 돌아옵니다.",
+        actions:["오늘 할 일 3개만 적기","제일 하기 싫은 일 10분 먼저 시작하기"] }],
+      mid: [{ title:"6개월 습관 자리잡기",
+        why:"의지 대신 구조로 만드는 것이 오래갑니다.",
+        actions:["매일 10분 루틴 하나 정하기","주 1회 스스로 점검하는 시간 갖기"] }],
+      long: [{ title:"1년, 나만의 리듬 만들기",
+        why:"장기 목표는 방향과 우선순위가 있어야 흔들리지 않습니다.",
+        actions:["장기 목표 3개 적고 우선순위 정하기","분기마다 되돌아보는 날 정하기"] }]
+    }
+  };
+
+  function recsFor(cat, h, p){
+    var out = [];
+    if(cat === "건강"){
+      var w = weightGoal(p, h);
+      if(w){ out.push(Object.assign({ category:"건강" }, w)); }
+    }
+    (TPL[cat] && TPL[cat][h] ? TPL[cat][h] : []).forEach(function(t){
+      out.push({ title:t.title, why:t.why, category:cat, targetDate:dateForHorizon(h), actions:t.actions.slice() });
+    });
+    return out;
+  }
+
+  /* ---- wizard ---- */
+  var wiz = null;
+  var AGE_OPTS = ["10대","20대","30대","40대","50대","60대+"];
+
+  function openWizard(){
+    wiz = { step:1, profile:{ sex:"", age:"", height:"", weight:"" }, grid:{}, top:"", text:"", analysis:null, custom:[], recs:[] };
+    if(state.profile) wiz.profile = Object.assign({sex:"",age:"",height:"",weight:""}, state.profile);
+    document.getElementById("onboard").hidden = false;
+    document.body.style.overflow = "hidden";
+    renderWizard();
+  }
+  function closeWizard(){
+    if(recog && listening){ try{ recog.stop(); }catch(e){} }
+    document.getElementById("onboard").hidden = true; document.body.style.overflow = "";
+  }
+
+  function renderWizard(){
+    if(listening){ try{ recog.stop(); }catch(e){} listening = false; }
+    var s = document.getElementById("wizSheet");
+    var dots = '<div class="steps">' + [1,2,3,4].map(function(n){ return '<i class="'+(n<=wiz.step?"on":"")+'"></i>'; }).join("") + '</div>';
+    if(wiz.step === 1){ s.innerHTML = wizStep1(dots); bindStep1(); }
+    else if(wiz.step === 2){ s.innerHTML = wizStep2(dots); bindStep2(); }
+    else if(wiz.step === 3){ s.innerHTML = wizStep3(dots); bindStep3(); }
+    else { s.innerHTML = wizStep4(dots); bindStep4(); }
+    document.getElementById("onboard").scrollTop = 0;
+  }
+
+  function wizStep1(dots){
+    var p = wiz.profile;
+    return dots +
+      '<h2>빠른 시작</h2>'+
+      '<p class="lead">몇 가지만 알려주시면 목표와 다음 행동을 대신 잡아드립니다. 1분이면 끝나요.</p>'+
+      '<div class="privacy">입력한 정보는 <b>이 브라우저에만</b> 저장되며 어디에도 전송되지 않습니다. 언제든 건너뛸 수 있습니다.</div>'+
+      '<div class="grid2" style="margin-top:14px">'+
+        '<div class="field"><label>성별 (선택)</label><select id="w-sex">'+
+          ["","남성","여성","선택 안 함"].map(function(o){ return '<option value="'+o+'"'+(p.sex===o?" selected":"")+'>'+(o||"— 선택 —")+'</option>'; }).join("")+
+        '</select></div>'+
+        '<div class="field"><label>연령대 (선택)</label><select id="w-age">'+
+          [""].concat(AGE_OPTS).map(function(o){ return '<option value="'+o+'"'+(p.age===o?" selected":"")+'>'+(o||"— 선택 —")+'</option>'; }).join("")+
+        '</select></div>'+
+      '</div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>키 (cm, 선택)</label><input id="w-height" type="number" inputmode="decimal" placeholder="예: 178" value="'+(p.height||"")+'"></div>'+
+        '<div class="field"><label>몸무게 (kg, 선택)</label><input id="w-weight" type="number" inputmode="decimal" placeholder="예: 96" value="'+(p.weight||"")+'"></div>'+
+      '</div>'+
+      '<div id="w-bmi"></div>'+
+      '<div class="wiz-nav"><button class="btn link" id="w-skip">건너뛰고 직접 입력할게요</button><button class="btn primary" id="w-next">다음</button></div>';
+  }
+  function bindStep1(){
+    var p = wiz.profile;
+    var upd = function(){
+      p.sex = document.getElementById("w-sex").value;
+      p.age = document.getElementById("w-age").value;
+      p.height = document.getElementById("w-height").value;
+      p.weight = document.getElementById("w-weight").value;
+      drawBmiCard();
+    };
+    ["w-sex","w-age","w-height","w-weight"].forEach(function(id){
+      document.getElementById(id).addEventListener("input", upd);
+      document.getElementById(id).addEventListener("change", upd);
+    });
+    drawBmiCard();
+    document.getElementById("w-skip").addEventListener("click", function(){ markOnboarded(); closeWizard(); go("goals"); });
+    document.getElementById("w-next").addEventListener("click", function(){ upd(); wiz.step = 2; renderWizard(); });
+  }
+  function drawBmiCard(){
+    var el = document.getElementById("w-bmi"); if(!el) return;
+    var i = bmiInfo(wiz.profile);
+    if(!i){ el.innerHTML = ""; return; }
+    var color = i.bad ? "var(--warn)" : "var(--ok)";
+    el.innerHTML = '<div class="bmi">'+
+      '<div style="display:flex;align-items:baseline;gap:10px"><span class="val" style="color:'+color+'">BMI '+i.bmi.toFixed(1)+'</span>'+
+      '<span class="cat" style="color:'+color+'">'+i.cat+'</span></div>'+
+      '<div class="bmi-rows">'+
+        '<span>· 정상 BMI 18.5~22.9 기준, 정상 상한 체중은 약 <b>'+i.normalMax.toFixed(1)+'kg</b></span>'+
+        (i.bad ? '<span>· 현재 체중에서 <b>'+(i.kg-i.normalMax).toFixed(1)+'kg</b> 감량이 정상 범위 진입선</span>' : '<span>· 지금 체중을 유지하는 것이 목표예요</span>')+
+        '<span>· 참고용 추정치이며 의학적 진단이 아닙니다. 감량·운동 계획은 전문가와 상담하세요.</span>'+
+      '</div></div>';
+  }
+
+  /* ---- lifestyle analysis (local, keyword-based) ---- */
+  var LEX = [
+    { cat:"커리어", kw:["이직","취직","퇴사","회사","옮기","직장","커리어","경력","승진","연봉","면접","이력서","포트폴리오","재취업","테크리드","시니어","파트장","워라밸","재택"] },
+    { cat:"학습",   kw:["공부","학습","자격증","시험","강의","독서","책 읽","영어","외국어","코딩","배우","스터디","대학원","논문","기술","자격"] },
+    { cat:"건강",   kw:["운동","헬스","체중","몸무게","살이","살 좀","살 빼","살빼","다이어트","감량","체력","건강","수면","잠","주짓수","러닝","달리기","자전거","등산","요가","스트레칭","금주","금연","담배","술","BMI"] },
+    { cat:"사업",   kw:["사업","창업","부업","매출","장사","가게","스토어","판매","고객","마케팅","제품","서비스","수익","아이템","브랜드","부수입"] },
+    { cat:"가족",   kw:["가족","아이","아내","남편","부모","아들","딸","육아","결혼","관계","친구","함께 보내"] },
+    { cat:"재정",   kw:["돈","저축","재테크","투자","주식","부동산","대출","빚","지출","예산","자산","연금","생활비"] },
+    { cat:"기타",   kw:["취미","여행","마음","명상","정리","버리","미루","루틴","습관","시간관리","일기","음악","그림","휴식"] }
+  ];
+  var HINT = [
+    { key:"short", kw:["이번 주","이번 달","한 달","1개월","당장","빨리","우선","먼저","곧","즉시","금방"] },
+    { key:"mid",   kw:["6개월","반년","올해","몇 달","3개월","분기","점차","차차","차근차근"] },
+    { key:"long",  kw:["1년","몇 년","장기","평생","계속","꾸준히","나중","미래","언젠가","장기적"] }
+  ];
+  function countOcc(t, kw){ var n=0, i=0; while((i = t.indexOf(kw, i)) !== -1){ n++; i += kw.length; } return n; }
+  function guessCat(s){ var best="기타", bs=0; LEX.forEach(function(e){ var n=0; e.kw.forEach(function(k){ if(s.indexOf(k)!==-1) n++; }); if(n>bs){ bs=n; best=e.cat; } }); return best; }
+
+  function analyzeLifestyle(text){
+    var t = (text||"").replace(/\s+/g," ").trim();
+    var scores = {}; CATS.forEach(function(c){ scores[c]=0; });
+    LEX.forEach(function(e){ e.kw.forEach(function(k){ scores[e.cat] += countOcc(t,k); }); });
+    var hScores = { short:0, mid:0, long:0 };
+    HINT.forEach(function(h){ h.kw.forEach(function(k){ hScores[h.key] += countOcc(t,k); }); });
+    var dom = "mid", bestH = -1;
+    ["short","mid","long"].forEach(function(k){ if(hScores[k] > bestH){ bestH = hScores[k]; dom = k; } });
+    if(bestH <= 0) dom = "mid";
+
+    var detected = CATS.map(function(c){ return { cat:c, score:scores[c] }; })
+      .filter(function(x){ return x.score > 0; })
+      .sort(function(a,b){ return b.score - a.score; })
+      .slice(0,5)
+      .map(function(x){ return { cat:x.cat, h:dom, score:x.score }; });
+
+    var explicit = extractGoals(t);
+    var hints = parseHints(t);
+
+    var summary = detected.length
+      ? "관심이 뚜렷한 영역: " + detected.map(function(d){ return d.cat; }).join(", ") + ". 기간은 대체로 " + H_LABEL[dom] + " 쪽으로 보입니다."
+      : "뚜렷하게 잡힌 영역이 없습니다. 다음 단계에서 직접 골라주세요.";
+    return { detected:detected, explicit:explicit, hints:hints, dom:dom, summary:summary };
+  }
+  function extractGoals(t){
+    var parts = t.split(/[.。!?！?\n,、]|그리고|그런데|근데|또는|또 |및 /).map(function(s){ return s.trim(); }).filter(Boolean);
+    var out = [];
+    parts.forEach(function(s){
+      if(s.length < 6 || s.length > 140) return;
+      if(!/싶|할 거|할거|하려|해야|목표|계획|늘리|줄이|배우|시작|도전|준비|만들/.test(s)) return;
+      var clean = s.replace(/^\s*(그리고|근데|그런데|요즘|또)\s+/,"").replace(/(싶습니다|싶어요|싶은데|싶지만|싶고|싶어|싶다|싶음)\s*$/,"").trim();
+      if(clean.length < 5) return;
+      out.push({ text: clean.length > 60 ? clean.slice(0,60)+"…" : clean, cat: guessCat(clean) });
+    });
+    return out.slice(0,6);
+  }
+  function parseHints(t){
+    var h = {};
+    var hm = t.match(/키\s*(1[4-9]\d)|(1[4-9]\d)\s*(cm|센티|센치)/i);
+    if(hm) h.height = String(hm[1] || hm[2]);
+    var wm = t.match(/(?:몸무게|체중|무게)\D{0,4}(\d{2,3})|(\d{2,3})\s*(?:kg|킬로|키로)/i);
+    if(wm) h.weight = String(wm[1] || wm[2]);
+    var am = t.match(/(\d{2})\s*(?:살|세)/);
+    if(am){ var n = +am[1], dec = Math.floor(n/10)*10; if(dec >= 10 && dec <= 60) h.age = dec >= 60 ? "60대+" : dec+"대"; }
+    if(/남자|남성/.test(t)) h.sex = "남성";
+    else if(/여자|여성/.test(t)) h.sex = "여성";
+    return h;
+  }
+  function applyAnalysis(a){
+    a.detected.forEach(function(d){ wiz.grid[cellKey(d.cat, d.h)] = true; });
+    wiz.custom = a.explicit.slice();
+    ["sex","age","height","weight"].forEach(function(f){
+      if(a.hints[f] && !wiz.profile[f]) wiz.profile[f] = a.hints[f];
+    });
+  }
+
+  /* ---- voice ---- */
+  var recog = null, listening = false;
+  function setListening(on){
+    listening = on;
+    var btn = document.getElementById("w-mic"), st = document.getElementById("w-micstate");
+    if(btn) btn.textContent = on ? "⏹ 듣는 중… (누르면 정지)" : "🎙 음성으로 말하기";
+    if(st) st.textContent = on ? "말씀하세요. 브라우저가 음성을 텍스트로 바꿉니다." : "";
+  }
+
+  /* ---- step 2: 말로 설명 ---- */
+  function wizStep2(dots){
+    var a = wiz.analysis, result = "";
+    if(a){
+      var det = a.detected.map(function(d){ return '<span class="chip ok">'+esc(d.cat)+' · '+H_LABEL[d.h]+'</span>'; }).join(" ");
+      if(!det) det = '<span class="hint">뚜렷하게 잡힌 영역은 없어요. 다음 단계에서 직접 골라도 됩니다.</span>';
+      var goals = a.explicit.length
+        ? '<ul style="list-style:none;margin:8px 0 0;padding:0">'+a.explicit.map(function(g){ return '<li style="padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px">· '+esc(g.text)+' <span class="chip gray">'+esc(g.cat)+'</span></li>'; }).join("")+'</ul>'
+        : '<div class="hint">말씀에서 목표 문장을 뽑지 못했어요. 관심 지도에서 골라주세요.</div>';
+      var hintLine = Object.keys(a.hints).length
+        ? '<div class="hint" style="margin-top:8px">기본 정보로 반영: ' + Object.keys(a.hints).map(function(k){ return k+"="+esc(a.hints[k]); }).join(", ") + '</div>' : '';
+      result = '<div class="bmi">'+
+        '<div style="font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.4px">라이프스타일 분석</div>'+
+        '<div style="margin-top:8px;font-size:13px;color:var(--muted)">'+esc(a.summary)+'</div>'+
+        '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">'+det+'</div>'+
+        '<div style="margin-top:14px;font-size:12.5px;font-weight:800">말씀에서 뽑은 목표 후보</div>'+goals+ hintLine +
+        '<div class="hint" style="margin-top:10px">브라우저 안에서 키워드로 분석합니다(외부 전송 없음). 문장을 통째로 이해하는 AI 요약이 필요하면 별도 연동이 필요해요.</div>'+
+      '</div>';
+    }
+    return dots +
+      '<h2>말로 설명하기 <span class="muted" style="font-weight:500;font-size:13px">(선택)</span></h2>'+
+      '<p class="lead">지금 사는 모습이나 바꾸고 싶은 걸 편하게 말해보세요. 관심 분야와 기간을 자동으로 잡아드립니다.</p>'+
+      '<div class="field"><label>음성 또는 직접 입력</label>'+
+        '<textarea id="w-text" style="min-height:110px" placeholder="예: 요즘 살이 좀 쪘고, 회사도 옮기고 싶어. 영어도 매일 조금씩 하고 싶고, 아이랑 보내는 시간도 늘리고 싶어…">'+esc(wiz.text||"")+'</textarea></div>'+
+      '<div class="row" style="margin-top:0">'+
+        '<button class="btn ghost" id="w-mic">🎙 음성으로 말하기</button>'+
+        '<button class="btn primary" id="w-analyze">분석하기</button>'+
+      '</div>'+
+      '<div id="w-micstate" class="hint"></div>'+
+      result+
+      '<div class="wiz-nav"><button class="btn link" id="w-back">이전</button><button class="btn primary" id="w-next">관심 지도로</button></div>';
+  }
+  function bindStep2(){
+    var ta = document.getElementById("w-text");
+    ta.addEventListener("input", function(){ wiz.text = ta.value; });
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    document.getElementById("w-mic").addEventListener("click", function(){
+      if(!SR){ toast("이 브라우저는 음성 인식을 지원하지 않아요 — 직접 입력해 주세요"); return; }
+      if(listening){ try{ recog.stop(); }catch(e){} listening = false; setListening(false); return; }
+      recog = new SR(); recog.lang = "ko-KR"; recog.continuous = true; recog.interimResults = true;
+      var base = ta.value ? ta.value.replace(/\s+$/,"") + " " : "";
+      recog.onresult = function(e){
+        var fin = "", inter = "";
+        for(var i=e.resultIndex; i<e.results.length; i++){
+          if(e.results[i].isFinal) fin += e.results[i][0].transcript;
+          else inter += e.results[i][0].transcript;
+        }
+        if(fin) base += fin;
+        ta.value = base + inter;
+        wiz.text = ta.value;
+      };
+      recog.onerror = function(){ setListening(false); toast("음성 인식 오류 — 직접 입력해 주세요"); };
+      recog.onend = function(){ setListening(false); wiz.text = ta.value; };
+      try{ recog.start(); setListening(true); }catch(e){ toast("음성 인식을 시작할 수 없어요"); }
+    });
+    document.getElementById("w-analyze").addEventListener("click", function(){
+      wiz.text = ta.value;
+      if(!wiz.text.trim()){ toast("먼저 말하거나 입력해 주세요"); return; }
+      wiz.analysis = analyzeLifestyle(wiz.text);
+      applyAnalysis(wiz.analysis);
+      renderWizard();
+      toast("분석 완료");
+    });
+    document.getElementById("w-back").addEventListener("click", function(){ wiz.step = 1; renderWizard(); });
+    document.getElementById("w-next").addEventListener("click", function(){
+      wiz.text = ta.value;
+      if(wiz.text.trim() && !wiz.analysis){ wiz.analysis = analyzeLifestyle(wiz.text); applyAnalysis(wiz.analysis); }
+      wiz.step = 3; renderWizard();
+    });
+  }
+
+  /* ---- step 3: 관심 지도 (분류 × 기간) ---- */
+  function wizStep3(dots){
+    var rows = HORIZONS.map(function(hd){
+      var chips = CATS.map(function(c){
+        var k = cellKey(c, hd.key);
+        return '<button class="chip-sel '+(wiz.grid[k]?"on":"")+'" data-cell="'+k+'">'+c+'</button>';
+      }).join("");
+      return '<div style="margin-top:16px"><div style="font-size:12.5px;font-weight:800;color:var(--muted)">'+hd.label+
+        ' <span style="font-weight:500;color:var(--faint)">· '+hd.hint+'</span></div>'+
+        '<div class="chips" style="margin-top:8px">'+chips+'</div></div>';
+    }).join("");
+    var picked = Object.keys(wiz.grid).filter(function(k){ return wiz.grid[k]; });
+    var topHtml = picked.length
+      ? '<div class="field" style="margin-top:20px"><label>그중 지금 가장 중요한 하나</label><select id="w-top">'+
+          picked.map(function(k){ var s = splitKey(k); return '<option value="'+k+'"'+(wiz.top===k?" selected":"")+'>'+s.cat+' · '+H_LABEL[s.h]+'</option>'; }).join("")+'</select></div>'
+      : '<div class="hint" style="margin-top:16px">하나 이상 골라주세요.</div>';
+    return dots +
+      '<h2>관심 지도</h2>'+
+      '<p class="lead">분류와 기간을 함께 고르면 대부분의 목표를 빠짐없이 뽑아낼 수 있습니다. 여러 개 선택하세요.</p>'+
+      rows + topHtml +
+      '<div class="wiz-nav"><button class="btn link" id="w-back">이전</button><button class="btn primary" id="w-next"'+(picked.length?"":" disabled")+'>추천 목표 보기</button></div>';
+  }
+  function bindStep3(){
+    document.querySelectorAll("#wizSheet .chip-sel[data-cell]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var k = b.dataset.cell;
+        wiz.grid[k] = !wiz.grid[k];
+        if(!wiz.grid[k] && wiz.top === k) wiz.top = "";
+        renderWizard();
+      });
+    });
+    var sel = document.getElementById("w-top");
+    if(sel) sel.addEventListener("change", function(){ wiz.top = sel.value; });
+    document.getElementById("w-back").addEventListener("click", function(){ wiz.step = 2; renderWizard(); });
+    document.getElementById("w-next").addEventListener("click", function(){
+      if(sel) wiz.top = sel.value;
+      wiz.recs = buildRecs();
+      wiz.step = 4; renderWizard();
+    });
+  }
+
+  function buildRecs(){
+    var picked = Object.keys(wiz.grid).filter(function(k){ return wiz.grid[k]; });
+    picked.sort(function(a,b){ if(a===wiz.top) return -1; if(b===wiz.top) return 1; return 0; });
+    var recs = [];
+    picked.forEach(function(k){
+      var s = splitKey(k);
+      recsFor(s.cat, s.h, wiz.profile).forEach(function(r){ r._key = k; r.include = true; recs.push(r); });
+    });
+    var covered = {};
+    picked.forEach(function(k){ covered[splitKey(k).cat] = true; });
+    (wiz.custom || []).forEach(function(c){
+      recs.push({ title:c.text, why:"말씀하신 내용에서 뽑은 목표입니다.", category:c.cat,
+        targetDate:null, actions:["첫 걸음 하나 정하기","언제까지 할지 기한 정하기"],
+        include: !covered[c.cat], _custom:true });
+    });
+    return recs;
+  }
+
+  /* ---- step 4: 추천 목표 검토 ---- */
+  function wizStep4(dots){
+    var missingBody = Object.keys(wiz.grid).some(function(k){ return wiz.grid[k] && splitKey(k).cat==="건강"; }) && !bmiInfo(wiz.profile);
+    var recs = wiz.recs.map(function(r, i){
+      var acts = r.actions.map(function(a, j){
+        return '<li><span class="txt">'+esc(a)+'</span><button class="btn link" data-rm="'+i+'">빼기</button></li>';
+      }).join("");
+      var tag = r._custom ? '<span class="chip gray">말씀에서 추출</span>' : '<span class="chip">'+esc(r.category)+'</span>';
+      return '<div class="rec" data-rec="'+i+'">'+
+        '<div class="rec-head">'+
+          '<input type="checkbox" data-inc="'+i+'"'+(r.include?" checked":"")+'>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="margin-bottom:6px">'+tag+'</div>'+
+            '<input data-title="'+i+'" value="'+esc(r.title)+'" style="width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:9px 11px;font-weight:700">'+
+            '<textarea data-why="'+i+'" style="width:100%;margin-top:8px;border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:9px 11px;font-size:13px;min-height:52px">'+esc(r.why)+'</textarea>'+
+          '</div>'+
+        '</div>'+
+        '<ul class="actions" data-alist="'+i+'">'+acts+'</ul>'+
+      '</div>';
+    }).join("");
+    return dots +
+      '<h2>추천 목표</h2>'+
+      '<p class="lead">마음에 안 드는 건 빼거나 문구를 고쳐도 됩니다. 체크된 것만 목표로 만들어집니다.</p>'+
+      (missingBody ? '<div class="note">키와 몸무게를 입력하면 체중 목표를 훨씬 구체적으로 잡아드릴 수 있어요. <button class="btn link" id="w-gobody" style="color:inherit;text-decoration:underline">입력하러 가기</button></div>' : '')+
+      (recs || '<div class="hint">추천할 목표가 없습니다. 이전 단계에서 영역을 골라주세요.</div>')+
+      '<div class="wiz-nav"><button class="btn link" id="w-back">이전</button>'+
+      '<div style="display:flex;gap:10px"><button class="btn ghost" id="w-skip">그냥 시작</button><button class="btn primary" id="w-done">이 목표들로 시작하기</button></div></div>';
+  }
+  function bindStep4(){
+    document.querySelectorAll("#wizSheet [data-inc]").forEach(function(c){
+      c.addEventListener("change", function(){ document.querySelector('.rec[data-rec="'+c.dataset.inc+'"]').classList.toggle("off", !c.checked); });
+    });
+    document.querySelectorAll("#wizSheet [data-rm]").forEach(function(b){
+      b.addEventListener("click", function(){ var li = b.closest("li"); if(li) li.remove(); });
+    });
+    var back = document.getElementById("w-back"); if(back) back.addEventListener("click", function(){ wiz.step = 3; renderWizard(); });
+    var gob = document.getElementById("w-gobody"); if(gob) gob.addEventListener("click", function(){ wiz.step = 1; renderWizard(); });
+    document.getElementById("w-skip").addEventListener("click", function(){ markOnboarded(); closeWizard(); go("goals"); });
+    document.getElementById("w-done").addEventListener("click", finishWizard);
+  }
+
+  function finishWizard(){
+    var made = 0;
+    document.querySelectorAll("#wizSheet .rec").forEach(function(node){
+      var i = +node.dataset.rec;
+      var inc = node.querySelector("[data-inc]").checked;
+      if(!inc) return;
+      var title = node.querySelector("[data-title]").value.trim() || wiz.recs[i].title;
+      var why = node.querySelector("[data-why]").value.trim();
+      var acts = Array.prototype.map.call(node.querySelectorAll("[data-alist] li .txt"), function(el){ return el.textContent.trim(); }).filter(Boolean);
+      state.goals.push({
+        id: uid(), title: title, why: why, category: wiz.recs[i].category,
+        targetDate: wiz.recs[i].targetDate || null,
+        createdAt: new Date().toISOString(), lastCheckIn: null,
+        actions: acts.map(function(t){ return { id: uid(), text: t, done:false, doneAt:null }; })
+      });
+      made++;
+    });
+    state.profile = wiz.profile;
+    state.onboarded = true;
+    save(); closeWizard(); go("today"); render();
+    toast(made ? (made + "개 목표를 만들었습니다") : "목표 없이 시작합니다");
+  }
+  function markOnboarded(){ state.onboarded = true; save(); }
+
+  /* ================= Google Tasks integration =================
+     Requires: Google Cloud project with Tasks API enabled + OAuth client ID
+     (Web application) whose "Authorized JavaScript origins" includes the page
+     origin. Must be opened over http(s) — file:// cannot use Google sign-in.
+     Access tokens are short-lived (~1h) and are NOT persisted. */
+
+  var GT_SCOPE = "https://www.googleapis.com/auth/tasks";
+  var GT_BASE  = "https://tasks.googleapis.com/tasks/v1";
+  var gToken = null, gTokenExp = 0, gClient = null, gPending = null;
+
+  function gtReady(){ return !!(window.google && google.accounts && google.accounts.oauth2); }
+
+  function gtTokenCallback(resp){
+    if(resp && resp.access_token){
+      gToken = resp.access_token;
+      gTokenExp = Date.now() + ((resp.expires_in || 3600) * 1000);
+      if(gPending){ gPending.resolve(); gPending = null; }
+    } else {
+      if(gPending){ gPending.reject(new Error("denied")); gPending = null; }
+    }
+  }
+  var GT_CID_RE = /^[0-9]{6,}-[A-Za-z0-9_-]{10,}\.apps\.googleusercontent\.com$/;
+  function gtRequestToken(){
+    return new Promise(function(resolve, reject){
+      var cid = (state.gtasks && state.gtasks.clientId || "").trim();
+      if(!cid){ reject(new Error("no-client-id")); return; }
+      if(!GT_CID_RE.test(cid)){ reject(new Error("bad-client-id")); return; }
+      if(!gtReady()){ reject(new Error("no-gis")); return; }
+      gPending = {
+        resolve: function(){ clearTimeout(gPending.timer); resolve(); },
+        reject:  function(e){ clearTimeout(gPending.timer); reject(e); }
+      };
+      gPending.timer = setTimeout(function(){
+        if(gPending){ var p = gPending; gPending = null; p.reject(new Error("timeout")); }
+      }, 45000);
+      try{
+        gClient = google.accounts.oauth2.initTokenClient({ client_id: cid, scope: GT_SCOPE, callback: gtTokenCallback });
+        gClient.requestAccessToken();
+      }catch(e){ var p2 = gPending; gPending = null; clearTimeout(p2.timer); reject(e); }
+    });
+  }
+  function gtEnsureToken(){
+    if(gToken && Date.now() < gTokenExp) return Promise.resolve();
+    return gtRequestToken();
+  }
+  function gtFetch(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({ "Authorization":"Bearer " + gToken }, opts.headers || {});
+    return fetch(GT_BASE + path, opts).then(function(r){
+      if(r.status === 204) return {};
+      return r.text().then(function(body){
+        if(!r.ok){
+          var msg = "HTTP " + r.status;
+          try{ var j = JSON.parse(body); if(j.error && j.error.message) msg += " · " + j.error.message; }catch(e){}
+          throw new Error(msg);
+        }
+        try{ return JSON.parse(body); }catch(e){ return {}; }
+      });
+    });
+  }
+  function gtErr(e){
+    var m = (e && e.message) || String(e);
+    if(m.indexOf("no-client-id") !== -1) return "먼저 OAuth 클라이언트 ID를 저장하세요";
+    if(m.indexOf("bad-client-id") !== -1) return "클라이언트 ID 형식이 올바르지 않아요 (…apps.googleusercontent.com 으로 끝나야 함)";
+    if(m.indexOf("no-gis") !== -1)       return "Google 로그인 스크립트를 불러오지 못했어요 (네트워크 확인)";
+    if(m.indexOf("denied") !== -1)       return "Google 연결이 취소되었어요";
+    if(m.indexOf("timeout") !== -1)      return "연결되지 않았어요. Google 창에 오류가 보이면 아래 체크리스트를 확인하세요";
+    if(m.indexOf("HTTP 401") !== -1){ gToken = null; return "인증이 만료됐어요. 다시 연결해 주세요"; }
+    if(m.indexOf("HTTP 403") !== -1)     return "권한이 없어요. Cloud에서 Tasks API 사용 설정을 확인하세요";
+    if(m.indexOf("HTTP 404") !== -1)     return "목록을 찾지 못했어요. 다시 동기화해 보세요";
+    return "실패: " + m.slice(0, 140);
+  }
+  function addCheckinOn(k, goalId){
+    if(!state.checkins[k]) state.checkins[k] = { count:0, goals:[] };
+    state.checkins[k].count++;
+    if(state.checkins[k].goals.indexOf(goalId) === -1) state.checkins[k].goals.push(goalId);
+  }
+
+  function gtSyncGoal(g, byTitle){
+    var listTitle = "Goal Keeper · " + g.title;
+    var listId = g.gtask && g.gtask.listId;
+    var prep = Promise.resolve();
+    if(!listId){
+      if(byTitle[listTitle]){
+        listId = byTitle[listTitle].id;
+        g.gtask = { listId: listId, map: (g.gtask && g.gtask.map) || {} };
+      } else {
+        prep = gtFetch("/users/@me/lists", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ title: listTitle })
+        }).then(function(l){ listId = l.id; g.gtask = { listId: listId, map:{} }; });
+      }
+    }
+    return prep.then(function(){
+      return gtFetch("/lists/" + encodeURIComponent(listId) + "/tasks?showCompleted=true&showHidden=true&maxResults=100");
+    }).then(function(res){
+      var tasks = {};
+      (res.items || []).forEach(function(t){ tasks[t.id] = t; });
+      var map = g.gtask.map = g.gtask.map || {};
+      var changed = 0;
+
+      Object.keys(map).forEach(function(aid){
+        var t = tasks[map[aid]];
+        var a = g.actions.filter(function(x){ return x.id === aid; })[0];
+        if(!t || !a) return;
+        if(t.status === "completed" && !a.done){
+          a.done = true;
+          a.doneAt = (t.completed || "").slice(0,10) || dateKey();
+          addCheckinOn(a.doneAt, g.id);
+          g.lastCheckIn = lastCheck(g);
+          changed++;
+        }
+      });
+
+      var seq = Promise.resolve();
+      g.actions.forEach(function(a){
+        var tid = map[a.id];
+        var due = null;
+        if(!a.done){
+          var nxt = nextAction(g);
+          if(nxt && nxt.id === a.id) due = dateKey();
+          else if(g.targetDate) due = g.targetDate;
+        }
+        var body = { title: a.text, notes: g.why || "", status: a.done ? "completed" : "needsAction" };
+        if(due) body.due = due + "T00:00:00.000Z";
+        if(tid){
+          var cur = tasks[tid];
+          if(cur && cur.status === body.status && cur.title === body.title) return;
+          seq = seq.then(function(){
+            return gtFetch("/lists/" + encodeURIComponent(listId) + "/tasks/" + encodeURIComponent(tid), {
+              method:"PATCH", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+            });
+          }).then(function(){ changed++; });
+        } else {
+          seq = seq.then(function(){
+            return gtFetch("/lists/" + encodeURIComponent(listId) + "/tasks", {
+              method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+            });
+          }).then(function(t){ map[a.id] = t.id; changed++; });
+        }
+      });
+      return seq.then(function(){ return changed; });
+    });
+  }
+
+  function gtSync(){
+    toast("동기화 중…");
+    gtEnsureToken().then(function(){
+      return gtFetch("/users/@me/lists?maxResults=100");
+    }).then(function(res){
+      var byTitle = {};
+      (res.items || []).forEach(function(l){ byTitle[l.title] = l; });
+      var seq = Promise.resolve(0);
+      state.goals.forEach(function(g){
+        seq = seq.then(function(n){ return gtSyncGoal(g, byTitle).then(function(c){ return n + c; }); });
+      });
+      return seq;
+    }).then(function(n){
+      state.gtasks.lastSync = new Date().toISOString();
+      save(); render();
+      toast(n ? (n + "개 항목 동기화 완료") : "이미 최신 상태입니다");
+    }).catch(function(e){
+      var msg = gtErr(e);
+      render();
+      toast(msg);
+    });
+  }
+  function gtDisconnect(){
+    if(gToken && gtReady()){
+      try{ google.accounts.oauth2.revoke(gToken, function(){}); }catch(e){}
+    }
+    gToken = null; gTokenExp = 0; gPending = null;
+    render(); toast("연결을 해제했습니다 (앱 기록은 그대로)");
+  }
+
+  function gtasksCardHtml(){
+    var st = state.gtasks || {};
+    var cid = st.clientId || "";
+    var connected = !!(gToken && Date.now() < gTokenExp);
+    var status = connected ? '<span class="chip ok">연결됨</span>'
+               : cid ? '<span class="chip warn">연결 필요</span>' : '<span class="chip gray">미설정</span>';
+    var last = st.lastSync ? new Date(st.lastSync).toLocaleString("ko-KR") : "—";
+    var mapped = state.goals.filter(function(g){ return g.gtask && g.gtask.listId; }).length;
+    var origin = location.origin;
+    var originNote = "", originBad = false;
+    if(location.protocol === "file:"){
+      originBad = true;
+      originNote = "지금 <code>file://</code>로 열려 있어 Google 로그인이 <b>불가능</b>합니다. 터미널에서 <code>python3 -m http.server 8000</code> 실행 후 <code>http://localhost:8000</code>으로 열어주세요.";
+    } else if(location.protocol !== "https:" && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)){
+      originBad = true;
+      originNote = "Google은 <code>localhost</code> 또는 <b>HTTPS</b> 주소만 origin으로 허용합니다. 지금 주소는 등록할 수 없어요.";
+    }
+    return '<div class="card goal" style="margin-top:12px">'+
+      '<div class="section-title" style="margin-top:0">Google Tasks 연동 '+status+'</div>'+
+      '<div class="hint">목표마다 <b>「Goal Keeper · 목표명」</b> 목록을 만들고, 각 <b>행동</b>을 할 일로 올립니다. <b>다음 행동</b>은 오늘 날짜로, 나머지는 목표 기한으로 표시돼요. Google Tasks에서 완료 체크한 항목은 앱에도 반영됩니다.</div>'+
+      '<div class="field" style="margin-top:12px"><label>이 페이지 주소 (승인된 JavaScript 원본에 등록할 값)</label>'+
+        '<div class="row" style="margin-top:0"><code style="flex:1;word-break:break-all;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px">'+esc(origin)+'</code>'+
+        '<button class="btn ghost small" id="gt-copy">복사</button></div>'+
+        (originNote ? '<div class="note" style="margin-top:8px">'+originNote+'</div>' : '')+
+      '</div>'+
+      '<div class="field" style="margin-top:12px"><label>OAuth 클라이언트 ID</label>'+
+        '<input id="gt-cid" placeholder="예: 1234567890-abc.apps.googleusercontent.com" value="'+esc(cid)+'">'+
+      '</div>'+
+      '<div class="row">'+
+        '<button class="btn ghost small" id="gt-save">ID 저장</button>'+
+        (connected
+          ? '<button class="btn primary small" id="gt-sync">지금 동기화</button><button class="btn link" id="gt-disc">연결 해제</button>'
+          : '<button class="btn primary small" id="gt-conn">Google 연결</button>')+
+      '</div>'+
+      '<div class="hint" style="margin-top:10px">연동된 목표 '+mapped+' / '+state.goals.length+' · 마지막 동기화 '+esc(last)+'</div>'+
+      '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted)">처음 설정하는 방법 (약 3분)</summary>'+
+        '<ol class="hint" style="padding-left:18px;margin-top:8px;line-height:1.7">'+
+          '<li>console.cloud.google.com 에서 <b>프로젝트 생성</b></li>'+
+          '<li>「API 및 서비스 → 라이브러리」에서 <b>Google Tasks API</b> 사용 설정</li>'+
+          '<li>「OAuth 동의 화면」 구성 (외부 + 테스트 사용자에 본인 계정 추가)</li>'+
+          '<li>「사용자 인증 정보 → OAuth 클라이언트 ID → <b>웹 애플리케이션</b>」 생성</li>'+
+          '<li><b>승인된 JavaScript 원본</b>에 이 페이지 주소 추가 (예: <code>http://localhost:8000</code>)</li>'+
+          '<li>발급된 클라이언트 ID를 위 칸에 붙여넣고 <b>ID 저장</b> → <b>Google 연결</b></li>'+
+        '</ol>'+
+        '<div class="hint" style="margin-top:14px;font-weight:700">“Error 401: invalid_client / OAuth client was not found” 가 뜨면</div>'+
+        '<ul class="hint" style="padding-left:18px;margin-top:6px;line-height:1.7">'+
+          '<li>붙여넣은 값이 <b>클라이언트 ID</b>가 맞는지 (클라이언트 “보안 비밀”이나 API 키가 아님) — <code>숫자-문자열.apps.googleusercontent.com</code> 형태</li>'+
+          '<li>앞뒤 공백이나 줄바꿈이 섞이지 않았는지</li>'+
+          '<li>클라이언트 유형이 <b>웹 애플리케이션</b>인지 (Android/iOS/데스크톱용은 이 방식으로 못 씁니다)</li>'+
+          '<li>방금 만들었다면 <b>2~5분</b> 기다렸다가 다시 시도 (전파 지연)</li>'+
+          '<li>“승인된 JavaScript 원본”에 이 페이지 주소가 <b>정확히</b> 들어갔는지 (예: <code>http://localhost:8000</code>, 끝 슬래시 없음)</li>'+
+        '</ul>'+
+        '<div class="note" style="margin-top:10px">이 앱은 <b>http(s) 주소</b>로 열어야 합니다. 파일(file://)로 열면 Google 로그인이 동작하지 않아요. 접근 토큰은 약 1시간 후 만료되어 다시 연결이 필요할 수 있습니다. 완료 여부만 동기화하고, 항목을 임의로 삭제하지는 않습니다.</div>'+
+      '</details>'+
+    '</div>';
+  }
+  function bindGtasks(){
+    var el = document.getElementById("gt-save"); if(!el) return;
+    var cp = document.getElementById("gt-copy");
+    if(cp) cp.addEventListener("click", function(){
+      var v = location.origin;
+      var done = function(){ toast("주소를 복사했습니다: " + v); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(v).then(done, function(){ toast("복사 실패 — 주소를 직접 선택하세요"); });
+      } else {
+        var t = document.createElement("textarea"); t.value = v; document.body.appendChild(t); t.select();
+        try{ document.execCommand("copy"); done(); }catch(e){ toast("복사 실패 — 주소를 직접 선택하세요"); }
+        document.body.removeChild(t);
+      }
+    });
+    document.getElementById("gt-save").addEventListener("click", function(){
+      var v = (document.getElementById("gt-cid").value || "").trim();
+      state.gtasks = state.gtasks || { clientId:"", lastSync:null };
+      state.gtasks.clientId = v;
+      gClient = null; gToken = null; gTokenExp = 0;
+      save(); render(); toast(v ? "클라이언트 ID를 저장했습니다" : "클라이언트 ID를 비웠습니다");
+    });
+    var conn = document.getElementById("gt-conn");
+    if(conn) conn.addEventListener("click", function(){
+      var typed = (document.getElementById("gt-cid").value || "").trim();
+      state.gtasks = state.gtasks || { clientId:"", lastSync:null };
+      if(typed !== state.gtasks.clientId){ state.gtasks.clientId = typed; gClient = null; gToken = null; gTokenExp = 0; save(); }
+      gtEnsureToken().then(function(){ render(); toast("Google에 연결됐습니다"); })
+        .catch(function(e){ toast(gtErr(e)); });
+    });
+    var sync = document.getElementById("gt-sync");
+    if(sync) sync.addEventListener("click", gtSync);
+    var disc = document.getElementById("gt-disc");
+    if(disc) disc.addEventListener("click", gtDisconnect);
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- init ---------- */
+  document.querySelectorAll("nav.tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ go(b.dataset.tab); });
+  });
+  document.getElementById("todayDate").textContent = prettyDate(dateKey()) + " · " + dateKey();
+
+  // roll over streak display at midnight
+  var lastDay = dateKey();
+  setInterval(function(){
+    if(dateKey() !== lastDay){ lastDay = dateKey(); document.getElementById("todayDate").textContent = prettyDate(lastDay)+" · "+lastDay; render(); }
+  }, 60000);
+
+  go("today");
+  render();
+  if(!state.onboarded && !state.goals.length) openWizard();
+})();
+</script>
+</body>
+</html>
