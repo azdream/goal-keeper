@@ -57,7 +57,9 @@
 
   /* header */
   header.top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
-  .brand{display:flex; align-items:center; gap:10px}
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; border-radius:10px; transition:.15s}
+  .brand:hover{opacity:.75}
+  .brand:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
   .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#22c1c3);display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px}
   .brand h1{font-size:17px; margin:0; letter-spacing:-.2px}
   .brand .sub{font-size:12px; color:var(--faint)}
@@ -176,13 +178,13 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">
-      <div class="logo">G</div>
+    <a class="brand" href="https://goal.ethices.com/" title="Goal Keeper 홈으로">
+      <span class="logo">G</span>
       <div>
         <h1>Goal Keeper</h1>
-        <div class="sub">목표를 잃지 않고, 매일 한 걸음</div>
+        <div class="sub">목표를 잃지 않고 매일 한 걸음</div>
       </div>
-    </div>
+    </a>
     <div class="today-date" id="todayDate"></div>
   </header>
 
